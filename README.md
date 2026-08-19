@@ -1,5 +1,9 @@
 # REOF Golden Demo
 
+<p align="center">
+  <img src="docs/reof-excellent.svg" alt="REOF score 10.0 — Excellent" width="420" />
+</p>
+
 A deliberately microscopic Java/Spring Boot service designed as a **positive-control repository for the REOF MS-1.1 structural resilience audit**.
 
 Its purpose is not to be a production starter kit. It is an executable reference fixture where every resilience mechanism intended to be scored by REOF is explicit in code or configuration, easy to locate, and reproducible.

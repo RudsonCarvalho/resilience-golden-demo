@@ -4,7 +4,7 @@ set -euo pipefail
 BASE_URL="${BASE_URL:-http://localhost:8080}"
 CATALOG_MOCK_URL="${CATALOG_MOCK_URL:-http://localhost:8081}"
 WEBHOOK_MOCK_URL="${WEBHOOK_MOCK_URL:-http://localhost:8082}"
-ORDER_ID="${ORDER_ID:-reof-smoke-001}"
+ORDER_ID="${ORDER_ID:-craft-smoke-001}"
 
 printf 'Waiting for application readiness'
 for _ in $(seq 1 60); do
@@ -21,16 +21,18 @@ curl -fsS "$BASE_URL/actuator/health/readiness" | grep -q '"status":"UP"' || {
   exit 1
 }
 
-# First call creates the state; the second proves Redis can read it back.
 curl -fsS -X POST "$BASE_URL/api/orders/$ORDER_ID/fulfill" >/dev/null
 RESPONSE="$(curl -fsS -X POST "$BASE_URL/api/orders/$ORDER_ID/fulfill")"
 echo "$RESPONSE"
 
-echo "$RESPONSE" | grep -q '"catalogSource":"catalog-mock"'
-echo "$RESPONSE" | grep -q '"stateSource":"redis"'
+grep -q '"catalogSource":"catalog-mock"' <<<"$RESPONSE"
+grep -q '"stateSource":"redis"' <<<"$RESPONSE"
 
-# Prove the two outbound HTTP interactions really happened.
-curl -fsS "$CATALOG_MOCK_URL/__admin/requests" | grep -q "/catalog/$ORDER_ID"
-curl -fsS "$WEBHOOK_MOCK_URL/__admin/requests" | grep -q "/fulfillments/$ORDER_ID"
+# Capture the complete WireMock responses before matching them. With pipefail enabled,
+# `curl | grep -q` can make curl exit 23 when grep closes the pipe after an early match.
+CATALOG_REQUESTS="$(curl -fsS "$CATALOG_MOCK_URL/__admin/requests")"
+WEBHOOK_REQUESTS="$(curl -fsS "$WEBHOOK_MOCK_URL/__admin/requests")"
+grep -q "/catalog/$ORDER_ID" <<<"$CATALOG_REQUESTS"
+grep -q "/fulfillments/$ORDER_ID" <<<"$WEBHOOK_REQUESTS"
 
-echo 'REOF golden demo smoke test passed.'
+echo 'CRAFT golden demo smoke test passed.'

@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: reof-golden-demo
+  name: resilience-golden-demo
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: reof-golden-demo
+      app: resilience-golden-demo
   template:
     metadata:
       labels:
-        app: reof-golden-demo
+        app: resilience-golden-demo
     spec:
       terminationGracePeriodSeconds: 30
       restartPolicy: Always
       containers:
         - name: app
-          image: ghcr.io/rudsoncarvalho/reof-golden-demo:latest
+          image: ghcr.io/rudsoncarvalho/resilience-golden-demo:latest
           ports:
             - containerPort: 8080
           lifecycle:
@@ -55,9 +55,9 @@ spec:
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: reof-golden-demo
+  name: resilience-golden-demo
 spec:
   minAvailable: 1
   selector:
     matchLabels:
-      app: reof-golden-demo
+      app: resilience-golden-demo

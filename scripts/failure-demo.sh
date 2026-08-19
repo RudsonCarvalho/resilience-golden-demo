@@ -2,7 +2,7 @@
 set -euo pipefail
 
 BASE_URL="${BASE_URL:-http://localhost:8080}"
-ORDER_PREFIX="${ORDER_PREFIX:-reof-failure}"
+ORDER_PREFIX="${ORDER_PREFIX:-craft-failure}"
 
 echo 'Stopping the external catalog and webhook mocks...'
 docker compose stop catalog-mock webhook-mock
@@ -16,7 +16,7 @@ trap cleanup EXIT
 for i in 1 2 3; do
   RESPONSE="$(curl -fsS -X POST "$BASE_URL/api/orders/${ORDER_PREFIX}-${i}/fulfill")"
   echo "$RESPONSE"
-  echo "$RESPONSE" | grep -q '"catalogSource":"fallback-local"'
+  grep -q '"catalogSource":"fallback-local"' <<<"$RESPONSE"
 done
 
 # The catalog is synchronous, so its fallback is visible in the API response.

@@ -18,8 +18,7 @@ services:
       - catalog-mock
       - webhook-mock
 
-  # These two WireMock containers represent dependencies outside the application boundary.
-  # They exist only so the golden repository can demonstrate both healthy and failure paths locally.
+  # These WireMock containers model dependencies outside the application boundary.
   catalog-mock:
     image: wiremock/wiremock:3.13.2
     ports:
@@ -43,7 +42,7 @@ services:
       timeout: 1s
       retries: 20
 
-  # REOF DI replication: explicit replica of the controlled Redis master.
+  # CRAFT DI evidence: an explicit replica of the controlled Redis master.
   redis-replica:
     image: redis:7.4-alpine
     command: ["redis-server", "--replicaof", "redis-master", "6379", "--appendonly", "yes"]

@@ -4,7 +4,7 @@ server:
 
 spring:
   application:
-    name: reof-golden-demo
+    name: resilience-golden-demo
   lifecycle:
     timeout-per-shutdown-phase: 20s
   data:
@@ -12,7 +12,7 @@ spring:
       connect-timeout: 200ms
       timeout: 250ms
       sentinel:
-        master: reofmaster
+        master: craftmaster
         nodes: ${REDIS_SENTINELS:redis-sentinel-1:26379,redis-sentinel-2:26379,redis-sentinel-3:26379}
       lettuce:
         pool:
@@ -84,7 +84,7 @@ resilience4j:
         exponentialMaxWaitDuration: 500ms
         enableRandomizedWait: true
         randomizedWaitFactor: 0.5
-        retryExceptionPredicate: io.github.rudsoncarvalho.reof.resilience.GlobalRetryBudgetPredicate
+        retryExceptionPredicate: io.github.rudsoncarvalho.craft.infra.resilience.GlobalRetryBudgetPredicate
       webhook:
         maxAttempts: 3
         waitDuration: 100ms
@@ -93,7 +93,7 @@ resilience4j:
         exponentialMaxWaitDuration: 500ms
         enableRandomizedWait: true
         randomizedWaitFactor: 0.5
-        retryExceptionPredicate: io.github.rudsoncarvalho.reof.resilience.GlobalRetryBudgetPredicate
+        retryExceptionPredicate: io.github.rudsoncarvalho.craft.infra.resilience.GlobalRetryBudgetPredicate
   ratelimiter:
     instances:
       kafkaProducerThrottle:

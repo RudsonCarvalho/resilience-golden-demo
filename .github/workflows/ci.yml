@@ -1,0 +1,39 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  maven-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Compile and test
+        run: mvn -B -ntp verify
+
+  compose-smoke:
+    needs: maven-verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and start the full demo
+        run: docker compose up -d --build
+      - name: Healthy-path smoke test
+        run: ./scripts/smoke-test.sh
+      - name: Dependency-failure demonstration
+        run: ./scripts/failure-demo.sh
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+      - name: Stop demo
+        if: always()
+        run: docker compose down -v

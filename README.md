@@ -1,12 +1,15 @@
-# REOF Golden Demo
+# Resilience Golden Demo
 
-<p align="center">
-  <img src="docs/reof-excellent.svg" alt="REOF score 10.0 — Excellent" width="420" />
-</p>
+![CRAFT Score](https://img.shields.io/badge/CRAFT%20Score-10.0%20%C2%B7%20Excelente-2ea44f)
+![Profile](https://img.shields.io/badge/profile-CRAFT%2FMS--1.1.1-555)
+![Audited](https://img.shields.io/badge/audited-2026--08--19-555)
 
-A deliberately microscopic Java/Spring Boot service designed as a **positive-control repository for the REOF MS-1.1 structural resilience audit**.
+> Positive-control fixture for the CRAFT structural resilience audit.  
+> Score independently verified at commit [`c1cbfbc`](https://github.com/RudsonCarvalho/resilience-golden-demo/commit/c1cbfbcfdf3c8e503387807792af522ab42e7681) using profile `CRAFT/MS-1.1.1`.
 
-Its purpose is not to be a production starter kit. It is an executable reference fixture where every resilience mechanism intended to be scored by REOF is explicit in code or configuration, easy to locate, and reproducible.
+A deliberately microscopic Java/Spring Boot service designed as an executable structural-resilience reference fixture.
+
+Its purpose is not to be a production starter kit. Every resilience mechanism intended to be scored by the audit profile is explicit in code or configuration, easy to locate, and reproducible.
 
 ## What this repository demonstrates
 
@@ -16,9 +19,9 @@ There is one application, one business capability, and one public route:
 POST /api/orders/{orderId}/fulfill
 ```
 
-The single order-fulfillment flow crosses every REOF MS-1.1 vertical:
+The single order-fulfillment flow crosses every CRAFT/MS-1.1.1 vertical:
 
-| REOF vertical | Interaction point | Protections demonstrated |
+| Audit vertical | Interaction point | Protections demonstrated |
 |---|---|---|
 | **EE** | HTTP entry | semaphore bulkhead |
 | **CE** | synchronous catalog lookup | timeout, pool, circuit breaker, local fallback, exponential retry + jitter + attempt cap + global retry budget |
@@ -52,7 +55,7 @@ infra        -> HTTP, Redis, Kafka, health, resilience and runtime configuration
 
 The dependency direction is intentional: the fulfillment use case depends on `CatalogPort`, `OrderStatePort`, `FulfillmentWebhookPort`, and `FulfillmentEventPort`; concrete adapters implement those contracts under `infra`. The application layer therefore has no dependency on `RestClient`, Redis APIs, Kafka APIs, or Resilience4j annotations.
 
-This organization also mirrors REOF boundaries naturally:
+This organization also mirrors the audit boundaries naturally:
 
 ```text
 infra/entrypoint/web      -> EE
@@ -274,7 +277,7 @@ That makes the retry budget global rather than letting each downstream independe
 
 ## Anti-patterns intentionally avoided
 
-| REOF penalty | How this fixture avoids it |
+| Audit penalty | How this fixture avoids it |
 |---|---|
 | Timeout inversion | outbound timeouts are explicit; no shorter in-repo caller timeout wraps them |
 | Unconditional liveness | liveness performs runtime logic and can fail |
@@ -310,13 +313,13 @@ docker compose down -v
 
 A green CI therefore proves more than syntax: the service compiles, Spring starts, Redis/Sentinel works, Kafka is reachable, both external HTTP integrations are exercised, and the fallback path remains functional when those HTTP dependencies disappear.
 
-## Run a REOF audit
+## Run a CRAFT audit
 
-Point a REOF-capable agent at the repository root and ask it to run the structural resilience audit using profile **MS-1.1**.
+Point a CRAFT-capable agent at the repository root and ask it to run the structural resilience audit using profile **CRAFT/MS-1.1.1**.
 
 The auditor should independently discover one deployable service and the six interaction points listed in `REOF-MAP.md`. The map is documentation, not scoring evidence: a compliant audit must still cite the actual source/config file and resolved value for every scored mechanism.
 
-Expected final result for the supplied MS-1.1 profile:
+Expected final result for the supplied profile:
 
 ```text
 IRC = 10.0
@@ -396,6 +399,6 @@ D = 1
 
 This repository optimizes for **auditability, architectural clarity, and explicit boundaries rather than cleverness**. The domain remains framework-independent, the application layer owns the use case and ports, and infrastructure adapters contain the mechanisms that cross service boundaries.
 
-Resilience mechanisms are intentionally explicit because the REOF rule is provenance-first: if an auditor cannot resolve the mechanism and its value to source evidence, it should not score it.
+Resilience mechanisms are intentionally explicit because the CRAFT rule is provenance-first: if an auditor cannot resolve the mechanism and its value to source evidence, it should not score it.
 
-That also makes the project useful as a regression fixture for REOF auditors: if a future auditor version stops finding an intentionally present mechanism, the change becomes visible immediately.
+That also makes the project useful as a regression fixture for CRAFT auditors: if a future auditor version stops finding an intentionally present mechanism, the change becomes visible immediately.

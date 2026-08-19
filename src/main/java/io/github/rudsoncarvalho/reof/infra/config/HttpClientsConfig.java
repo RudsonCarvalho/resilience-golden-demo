@@ -31,25 +31,25 @@ public class HttpClientsConfig {
     static final int MAX_CONNECTIONS_PER_ROUTE = 16;
 
     @Bean(destroyMethod = "close")
-    CloseableHttpClient catalogHttpClient() {
+    CloseableHttpClient catalogApacheHttpClient() {
         return resilientHttpClient();
     }
 
     @Bean(destroyMethod = "close")
-    CloseableHttpClient webhookHttpClient() {
+    CloseableHttpClient webhookApacheHttpClient() {
         return resilientHttpClient();
     }
 
     @Bean("catalogRestClient")
     RestClient catalogRestClient(
-            @Qualifier("catalogHttpClient") CloseableHttpClient catalogHttpClient,
+            @Qualifier("catalogApacheHttpClient") CloseableHttpClient catalogHttpClient,
             @Value("${demo.clients.catalog.base-url}") String baseUrl) {
         return restClient(catalogHttpClient, baseUrl);
     }
 
     @Bean("webhookRestClient")
     RestClient webhookRestClient(
-            @Qualifier("webhookHttpClient") CloseableHttpClient webhookHttpClient,
+            @Qualifier("webhookApacheHttpClient") CloseableHttpClient webhookHttpClient,
             @Value("${demo.clients.webhook.base-url}") String baseUrl) {
         return restClient(webhookHttpClient, baseUrl);
     }

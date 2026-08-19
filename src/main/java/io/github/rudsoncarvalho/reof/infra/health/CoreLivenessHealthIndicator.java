@@ -1,4 +1,4 @@
-package io.github.rudsoncarvalho.reof.health;
+package io.github.rudsoncarvalho.reof.infra.health;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.actuate.health.Health;
@@ -6,6 +6,12 @@ import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
+/**
+ * Specific liveness check for a critical in-process runtime resource.
+ *
+ * <p>The probe can fail when the outbound executor is terminated, avoiding an unconditional static-200
+ * liveness anti-pattern.</p>
+ */
 @Component("coreLiveness")
 public class CoreLivenessHealthIndicator implements HealthIndicator {
 

@@ -1,4 +1,4 @@
-package io.github.rudsoncarvalho.reof.health;
+package io.github.rudsoncarvalho.reof.infra.health;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.springframework.boot.actuate.health.Health;
@@ -7,6 +7,9 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
+/**
+ * Startup gate that becomes healthy only after Spring publishes {@link ApplicationReadyEvent}.
+ */
 @Component("startupGate")
 public class StartupHealthIndicator implements HealthIndicator {
 

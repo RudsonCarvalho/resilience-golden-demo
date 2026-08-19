@@ -84,7 +84,7 @@ resilience4j:
         exponentialMaxWaitDuration: 500ms
         enableRandomizedWait: true
         randomizedWaitFactor: 0.5
-        retryExceptionPredicate: io.github.rudsoncarvalho.reof.resilience.GlobalRetryBudgetPredicate
+        retryExceptionPredicate: io.github.rudsoncarvalho.reof.infra.resilience.GlobalRetryBudgetPredicate
       webhook:
         maxAttempts: 3
         waitDuration: 100ms
@@ -93,7 +93,7 @@ resilience4j:
         exponentialMaxWaitDuration: 500ms
         enableRandomizedWait: true
         randomizedWaitFactor: 0.5
-        retryExceptionPredicate: io.github.rudsoncarvalho.reof.resilience.GlobalRetryBudgetPredicate
+        retryExceptionPredicate: io.github.rudsoncarvalho.reof.infra.resilience.GlobalRetryBudgetPredicate
   ratelimiter:
     instances:
       kafkaProducerThrottle:

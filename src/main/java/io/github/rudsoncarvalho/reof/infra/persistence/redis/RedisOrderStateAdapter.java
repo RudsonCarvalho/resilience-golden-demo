@@ -1,7 +1,8 @@
-package io.github.rudsoncarvalho.reof.data;
+package io.github.rudsoncarvalho.reof.infra.persistence.redis;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.rudsoncarvalho.reof.application.port.out.OrderStatePort;
 import io.github.rudsoncarvalho.reof.domain.OrderState;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -9,8 +10,14 @@ import java.util.concurrent.ConcurrentMap;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Repository;
 
+/**
+ * Redis adapter for service-owned order state.
+ *
+ * <p>This is the REOF DI boundary. Redis is the primary store, while a bounded process-local map provides a
+ * fallback that never calls the failed Redis backend again.</p>
+ */
 @Repository
-public class ResilientOrderStateStore {
+public class RedisOrderStateAdapter implements OrderStatePort {
 
     private static final String PREFIX = "reof:order:";
 
@@ -18,12 +25,12 @@ public class ResilientOrderStateStore {
     private final ObjectMapper objectMapper;
     private final ConcurrentMap<String, OrderState> localFallback = new ConcurrentHashMap<>();
 
-    public ResilientOrderStateStore(StringRedisTemplate redis, ObjectMapper objectMapper) {
+    public RedisOrderStateAdapter(StringRedisTemplate redis, ObjectMapper objectMapper) {
         this.redis = redis;
         this.objectMapper = objectMapper;
     }
 
-    // REOF DI fallback: Redis is primary; bounded-process local state preserves reads/writes when Redis is unavailable.
+    @Override
     public OrderState loadOrCreate(String orderId) {
         try {
             String raw = redis.opsForValue().get(PREFIX + orderId);
@@ -42,12 +49,13 @@ public class ResilientOrderStateStore {
         }
     }
 
+    @Override
     public void store(OrderState state) {
         localFallback.put(state.orderId(), state);
         try {
             redis.opsForValue().set(PREFIX + state.orderId(), serialize(state));
         } catch (RuntimeException redisFailure) {
-            // Intentional fallback already persisted the state in process memory.
+            // The local fallback already contains the state, so the use case can continue without Redis.
         }
     }
 

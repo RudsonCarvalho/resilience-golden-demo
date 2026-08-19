@@ -1,7 +1,6 @@
-package io.github.rudsoncarvalho.reof.config;
+package io.github.rudsoncarvalho.reof.infra.config;
 
 import java.time.Duration;
-
 import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
@@ -9,16 +8,22 @@ import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
 import org.apache.hc.core5.util.Timeout;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 
+/**
+ * Creates the pooled HTTP clients used by the CE and SE adapters.
+ *
+ * <p>All pool and timeout values are explicit so a structural REOF audit can resolve them from repository
+ * evidence instead of relying on framework defaults.</p>
+ */
 @Configuration
 public class HttpClientsConfig {
 
-    // REOF CE/SE timeout values are deliberately resolved in code, not left to framework defaults.
     static final Duration CONNECT_TIMEOUT = Duration.ofMillis(200);
     static final Duration RESPONSE_TIMEOUT = Duration.ofMillis(700);
     static final Duration CONNECTION_REQUEST_TIMEOUT = Duration.ofMillis(150);
@@ -37,14 +42,14 @@ public class HttpClientsConfig {
 
     @Bean("catalogRestClient")
     RestClient catalogRestClient(
-            @org.springframework.beans.factory.annotation.Qualifier("catalogHttpClient") CloseableHttpClient catalogHttpClient,
+            @Qualifier("catalogHttpClient") CloseableHttpClient catalogHttpClient,
             @Value("${demo.clients.catalog.base-url}") String baseUrl) {
         return restClient(catalogHttpClient, baseUrl);
     }
 
     @Bean("webhookRestClient")
     RestClient webhookRestClient(
-            @org.springframework.beans.factory.annotation.Qualifier("webhookHttpClient") CloseableHttpClient webhookHttpClient,
+            @Qualifier("webhookHttpClient") CloseableHttpClient webhookHttpClient,
             @Value("${demo.clients.webhook.base-url}") String baseUrl) {
         return restClient(webhookHttpClient, baseUrl);
     }

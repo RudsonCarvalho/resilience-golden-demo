@@ -1,14 +1,20 @@
-package io.github.rudsoncarvalho.reof.web;
+package io.github.rudsoncarvalho.reof.infra.entrypoint.web;
 
 import io.github.resilience4j.bulkhead.annotation.Bulkhead;
+import io.github.rudsoncarvalho.reof.application.service.FulfillmentService;
 import io.github.rudsoncarvalho.reof.domain.FulfillmentResponse;
-import io.github.rudsoncarvalho.reof.service.FulfillmentService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * HTTP entry adapter for the order-fulfillment capability.
+ *
+ * <p>REOF EE evidence is intentionally located at the external boundary: the controller surface is protected by
+ * a semaphore bulkhead before application orchestration begins.</p>
+ */
 @RestController
 @RequestMapping("/api/orders")
 public class FulfillmentController {
@@ -19,7 +25,6 @@ public class FulfillmentController {
         this.service = service;
     }
 
-    // REOF EE: the only external HTTP surface is protected by a semaphore bulkhead.
     @Bulkhead(name = "entryBulkhead", type = Bulkhead.Type.SEMAPHORE)
     @PostMapping("/{orderId}/fulfill")
     public ResponseEntity<FulfillmentResponse> fulfill(@PathVariable String orderId) {

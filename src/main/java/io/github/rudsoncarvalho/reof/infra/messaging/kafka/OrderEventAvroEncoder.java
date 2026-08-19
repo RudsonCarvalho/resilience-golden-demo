@@ -1,4 +1,4 @@
-package io.github.rudsoncarvalho.reof.messaging;
+package io.github.rudsoncarvalho.reof.infra.messaging.kafka;
 
 import io.github.rudsoncarvalho.reof.domain.FulfillmentEvent;
 import java.io.ByteArrayOutputStream;
@@ -11,10 +11,14 @@ import org.apache.avro.io.Encoder;
 import org.apache.avro.io.EncoderFactory;
 import org.springframework.stereotype.Component;
 
+/**
+ * Encodes fulfillment events against an explicit Avro schema before Kafka publication.
+ *
+ * <p>The concrete schema makes REOF producer schema-validation evidence directly auditable.</p>
+ */
 @Component
 public class OrderEventAvroEncoder {
 
-    // REOF SE-KAFKA schema validation: concrete Avro schema is applied before every publish.
     private static final Schema SCHEMA = new Schema.Parser().parse("""
             {
               "type": "record",
@@ -48,7 +52,7 @@ public class OrderEventAvroEncoder {
             ByteArrayOutputStream output = new ByteArrayOutputStream();
             GenericDatumWriter<GenericRecord> writer = new GenericDatumWriter<>(SCHEMA);
             Encoder encoder = EncoderFactory.get().binaryEncoder(output, null);
-            writer.write(record, encoder); // Avro writer enforces the declared record schema.
+            writer.write(record, encoder);
             encoder.flush();
             return output.toByteArray();
         } catch (IOException e) {

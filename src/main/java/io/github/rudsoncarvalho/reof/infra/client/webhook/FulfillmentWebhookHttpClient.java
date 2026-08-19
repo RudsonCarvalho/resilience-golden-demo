@@ -1,26 +1,33 @@
-package io.github.rudsoncarvalho.reof.client;
+package io.github.rudsoncarvalho.reof.infra.client.webhook;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
+import io.github.rudsoncarvalho.reof.application.port.out.FulfillmentWebhookPort;
 import io.github.rudsoncarvalho.reof.domain.FulfillmentEvent;
 import io.github.rudsoncarvalho.reof.domain.WebhookReceipt;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
-@Service
-public class FulfillmentWebhookClient {
+/**
+ * HTTP adapter responsible for sending fulfillment notifications to an external webhook.
+ *
+ * <p>This is the REOF SE boundary. The adapter combines an idempotent PUT, an explicit idempotency key, gzip,
+ * bounded asynchronous dispatch, connection pooling, timeout, circuit breaking, retry and local fallback.</p>
+ */
+@Component
+public class FulfillmentWebhookHttpClient implements FulfillmentWebhookPort {
 
     private final RestClient client;
     private final ObjectMapper objectMapper;
     private final Executor outboundExecutor;
 
-    public FulfillmentWebhookClient(
+    public FulfillmentWebhookHttpClient(
             @Qualifier("webhookRestClient") RestClient client,
             ObjectMapper objectMapper,
             @Qualifier("outboundExecutor") Executor outboundExecutor) {
@@ -29,8 +36,7 @@ public class FulfillmentWebhookClient {
         this.outboundExecutor = outboundExecutor;
     }
 
-    // REOF SE: asynchronous dispatch + gzip + pooled client timeout + CB + bounded retry.
-    // PUT is naturally idempotent and the explicit Idempotency-Key makes retry safety auditable.
+    @Override
     @Retry(name = "webhook", fallbackMethod = "fallback")
     @CircuitBreaker(name = "webhook")
     public CompletableFuture<WebhookReceipt> dispatch(String orderId, FulfillmentEvent event) {
@@ -50,7 +56,6 @@ public class FulfillmentWebhookClient {
 
     private CompletableFuture<WebhookReceipt> fallback(
             String orderId, FulfillmentEvent event, Throwable failure) {
-        // Deliberately local: same target/backend is never called by the fallback.
         return CompletableFuture.completedFuture(WebhookReceipt.degraded(orderId));
     }
 

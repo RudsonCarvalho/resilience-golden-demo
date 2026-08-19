@@ -1,4 +1,4 @@
-package io.github.rudsoncarvalho.reof.resilience;
+package io.github.rudsoncarvalho.reof.infra.resilience;
 
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -6,8 +6,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 
 /**
- * Shared token bucket used by every outbound Retry instance.
- * A failed initial call may retry only when one global retry token is available.
+ * Shared token-bucket predicate used by all outbound Resilience4j Retry instances.
+ *
+ * <p>A failed initial call may retry only when a global token is available. Sharing one budget across CE and SE
+ * prevents independent downstream policies from multiplying retry traffic during a broad dependency incident.</p>
  */
 public final class GlobalRetryBudgetPredicate implements Predicate<Throwable> {
 

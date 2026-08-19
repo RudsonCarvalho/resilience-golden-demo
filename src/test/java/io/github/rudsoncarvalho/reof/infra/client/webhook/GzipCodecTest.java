@@ -1,12 +1,15 @@
-package io.github.rudsoncarvalho.reof.client;
+package io.github.rudsoncarvalho.reof.infra.client.webhook;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.zip.GZIPInputStream;
-import java.io.ByteArrayInputStream;
 import org.junit.jupiter.api.Test;
 
+/**
+ * Verifies that the webhook adapter's explicit compression mechanism produces a valid GZIP payload.
+ */
 class GzipCodecTest {
 
     @Test

@@ -4,6 +4,18 @@ This repository is intentionally a **golden structural-resilience fixture** for 
 
 This file is only a navigation aid. A compliant auditor must still discover every interaction point itself, inspect code/configuration, resolve effective values, and attach file/line evidence. Nothing should be scored merely because it is mentioned here.
 
+## Architectural boundary
+
+The Java package tree intentionally separates concerns:
+
+```text
+domain       business concepts only
+application  use case + outbound ports
+infra        adapters, resilience mechanisms and runtime technology
+```
+
+The REOF mechanisms therefore sit at concrete infrastructure boundaries instead of being mixed into the business model.
+
 ## Service boundary
 
 - Independently deployable application service: `reof-golden-demo`
@@ -15,14 +27,16 @@ This file is only a navigation aid. A compliant auditor must still discover ever
 
 ## Interaction-point inventory
 
-| Point | Vertical | Target | Intended mechanisms |
-|---|---|---|---|
-| EE-1 | EE | `POST /api/orders/{orderId}/fulfill` | semaphore bulkhead |
-| CE-1 | CE | catalog `GET` | circuit breaker, local fallback, exponential retry+jitter+cap, global retry token bucket, explicit timeout, connection pool |
-| SE-1 | SE | fulfillment webhook `PUT` | circuit breaker, local fallback, exponential retry+jitter+cap, global retry token bucket, explicit timeout, pool, idempotent write, gzip, bounded async dispatch |
-| DI-1 | DI | Redis order-state store | master/replica replication, Sentinel, local fallback, command/connect timeout, Lettuce pool |
-| AC-1 | AC | Spring/Kubernetes container | specific readiness, specific liveness, self-healing, graceful shutdown/draining, resource request+limit, distinct startup probe, PDB |
-| SE-KAFKA-1 | SE-KAFKA | `fulfillment-events` producer | Avro schema validation, explicit bounded failure path, throttling, producer idempotence, bounded batch, `acks=all` |
+| Point | Vertical | Target | Primary evidence location | Intended mechanisms |
+|---|---|---|---|---|
+| EE-1 | EE | `POST /api/orders/{orderId}/fulfill` | `infra/entrypoint/web/FulfillmentController.java` | semaphore bulkhead |
+| CE-1 | CE | catalog `GET` | `infra/client/catalog/CatalogHttpClient.java` + `infra/config/HttpClientsConfig.java` | circuit breaker, local fallback, exponential retry+jitter+cap, global retry token bucket, explicit timeout, connection pool |
+| SE-1 | SE | fulfillment webhook `PUT` | `infra/client/webhook/FulfillmentWebhookHttpClient.java` + `infra/config/HttpClientsConfig.java` | circuit breaker, local fallback, exponential retry+jitter+cap, global retry token bucket, explicit timeout, pool, idempotent write, gzip, bounded async dispatch |
+| DI-1 | DI | Redis order-state store | `infra/persistence/redis/RedisOrderStateAdapter.java` + `application.yml` + `compose.yaml` | master/replica replication, Sentinel, local fallback, command/connect timeout, Lettuce pool |
+| AC-1 | AC | Spring/Kubernetes container | `infra/health/*` + `k8s/deployment.yaml` + `application.yml` | specific readiness, specific liveness, self-healing, graceful shutdown/draining, resource request+limit, distinct startup probe, PDB |
+| SE-KAFKA-1 | SE-KAFKA | `fulfillment-events` producer | `infra/messaging/kafka/*` + `application.yml` | Avro schema validation, explicit bounded failure path, throttling, producer idempotence, bounded batch, `acks=all` |
+
+All Java paths in this table are relative to `src/main/java/io/github/rudsoncarvalho/reof/`.
 
 ## Key resolved values the auditor should find
 
@@ -107,7 +121,7 @@ PDB minAvailable = 1
 - The webhook write is `PUT` plus an explicit `Idempotency-Key`.
 - Circuit breakers use a 10-call sliding window, minimum 5 calls and 50% threshold; they can trip under realistic demo traffic.
 - HTTP fallbacks return local values and never target the failed backend or a shared backend.
-- DI fallback uses process-local bounded state rather than retrying Redis.
+- DI fallback uses process-local state rather than retrying Redis.
 - Liveness evaluates an actual critical executor and can return DOWN.
 - Every explicit HTTP/Redis connection pool is paired with explicit timeouts.
 
@@ -129,7 +143,7 @@ This repository implements all listed mechanisms instead of hiding that profile 
 
 `D=1`, therefore the domain degradation factor is `1.0`.
 
-The exact interpretation of `Index_min` does not change this fixture's expected final result. With uncapped mechanism sums, `Index=94` exceeds `Index_max=90`, so final normalization is above 10 for any non-positive `Index_min` and the required clamp produces **IRC 10.0 / Excellent**. If an implementation caps every vertical at its declared maximum before normalization, `Index=Index_max=90`, which also produces **IRC 10.0 / Excellent**.
+With uncapped mechanism sums, `Index=94` exceeds `Index_max=90`, so the required final clamp produces **IRC 10.0 / Excellent**. If an implementation caps every vertical at its declared maximum before normalization, `Index=Index_max=90`, which also produces **IRC 10.0 / Excellent**.
 
 Expected penalty count: `0`.
 Expected unverified scored mechanisms after a complete audit: `0`.

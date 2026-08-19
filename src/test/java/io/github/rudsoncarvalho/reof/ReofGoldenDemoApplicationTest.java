@@ -10,6 +10,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+/**
+ * Verifies that the Spring context resolves every named Resilience4j instance used by the golden fixture.
+ */
 @SpringBootTest
 class ReofGoldenDemoApplicationTest {
 

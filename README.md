@@ -38,6 +38,27 @@ flowchart LR
     APP -->|SE-KAFKA: Avro event| K[(Kafka)]
 ```
 
+The Java code uses a deliberately small Clean/Hexagonal-style structure:
+
+```text
+domain       -> business data only
+application  -> use-case orchestration + outbound ports
+infra        -> HTTP, Redis, Kafka, health, resilience and runtime configuration
+```
+
+The dependency direction is intentional: the fulfillment use case depends on `CatalogPort`, `OrderStatePort`, `FulfillmentWebhookPort`, and `FulfillmentEventPort`; concrete adapters implement those contracts under `infra`. The application layer therefore has no dependency on `RestClient`, Redis APIs, Kafka APIs, or Resilience4j annotations.
+
+This organization also mirrors REOF boundaries naturally:
+
+```text
+infra/entrypoint/web      -> EE
+infra/client/catalog      -> CE
+infra/client/webhook      -> SE
+infra/persistence/redis   -> DI
+infra/messaging/kafka     -> SE-KAFKA
+infra/health + k8s        -> AC
+```
+
 The two WireMock containers represent **external HTTP dependencies**. They are deliberately outside the Spring Boot application boundary and can be replaced with real services by changing environment variables. Redis and Kafka are also real network dependencies from the application's point of view.
 
 This gives the fixture two reproducible modes:
@@ -169,7 +190,7 @@ They are intentionally not static `200` endpoints:
 
 ## CE — External Consultation
 
-`CatalogClient` performs:
+`CatalogHttpClient` implements `CatalogPort` and performs:
 
 ```text
 GET /catalog/{orderId}
@@ -193,7 +214,7 @@ The operation is `GET`, so retry does not introduce non-idempotent-write risk.
 
 ## SE — External Exit
 
-`FulfillmentWebhookClient` performs:
+`FulfillmentWebhookHttpClient` implements `FulfillmentWebhookPort` and performs:
 
 ```text
 PUT /fulfillments/{orderId}
@@ -211,13 +232,13 @@ queue capacity = 16
 
 ## DI — Internal Data
 
-Order state uses Spring Data Redis/Lettuce. The repository controls and exposes evidence for one Redis master, one replica, three Sentinels, explicit connect/command/pool-wait timeouts, explicit pool limits, and a process-local fallback.
+`RedisOrderStateAdapter` implements `OrderStatePort` using Spring Data Redis/Lettuce. The repository controls and exposes evidence for one Redis master, one replica, three Sentinels, explicit connect/command/pool-wait timeouts, explicit pool limits, and a process-local fallback.
 
 The fallback never calls Redis again, avoiding a circular fallback.
 
 ## SE-KAFKA — Producer
 
-`FulfillmentEventPublisher` publishes fulfillment events to:
+`KafkaFulfillmentEventPublisher` implements `FulfillmentEventPort` and publishes fulfillment events to:
 
 ```text
 fulfillment-events
@@ -323,21 +344,38 @@ This fixture implements the mechanisms as written rather than hiding the inconsi
 ├── Dockerfile
 ├── compose.yaml
 ├── k8s/deployment.yaml
-├── infra/
+├── infra/                         # Local demo infrastructure, outside the Java package tree
 │   ├── redis/
 │   └── wiremock/
 ├── scripts/
 │   ├── smoke-test.sh
 │   └── failure-demo.sh
 ├── src/main/java/io/github/rudsoncarvalho/reof/
-│   ├── client/
-│   ├── config/
-│   ├── data/
-│   ├── health/
-│   ├── messaging/
-│   ├── resilience/
-│   ├── service/
-│   └── web/
+│   ├── ReofGoldenDemoApplication.java
+│   ├── domain/
+│   │   ├── CatalogSnapshot.java
+│   │   ├── FulfillmentEvent.java
+│   │   ├── FulfillmentResponse.java
+│   │   ├── OrderState.java
+│   │   └── WebhookReceipt.java
+│   ├── application/
+│   │   ├── port/out/
+│   │   │   ├── CatalogPort.java
+│   │   │   ├── FulfillmentEventPort.java
+│   │   │   ├── FulfillmentWebhookPort.java
+│   │   │   └── OrderStatePort.java
+│   │   └── service/
+│   │       └── FulfillmentService.java
+│   └── infra/
+│       ├── entrypoint/web/FulfillmentController.java
+│       ├── client/
+│       │   ├── catalog/CatalogHttpClient.java
+│       │   └── webhook/
+│       ├── persistence/redis/RedisOrderStateAdapter.java
+│       ├── messaging/kafka/
+│       ├── health/
+│       ├── resilience/
+│       └── config/
 ├── src/main/resources/application.yml
 ├── src/test/java/
 └── REOF-MAP.md
@@ -358,6 +396,8 @@ This fixture implements the mechanisms as written rather than hiding the inconsi
 
 ## Design principle
 
-This repository optimizes for **auditability, not cleverness**. Resilience mechanisms are intentionally explicit because the REOF rule is provenance-first: if an auditor cannot resolve the mechanism and its value to source evidence, it should not score it.
+This repository optimizes for **auditability, architectural clarity, and explicit boundaries rather than cleverness**. The domain remains framework-independent, the application layer owns the use case and ports, and infrastructure adapters contain the mechanisms that cross service boundaries.
+
+Resilience mechanisms are intentionally explicit because the REOF rule is provenance-first: if an auditor cannot resolve the mechanism and its value to source evidence, it should not score it.
 
 That also makes the project useful as a regression fixture for REOF auditors: if a future auditor version stops finding an intentionally present mechanism, the change becomes visible immediately.

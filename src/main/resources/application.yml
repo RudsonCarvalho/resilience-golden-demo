@@ -1,0 +1,111 @@
+server:
+  port: 8080
+  shutdown: graceful
+
+spring:
+  application:
+    name: reof-golden-demo
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+  data:
+    redis:
+      connect-timeout: 200ms
+      timeout: 250ms
+      sentinel:
+        master: reofmaster
+        nodes: ${REDIS_SENTINELS:redis-sentinel-1:26379,redis-sentinel-2:26379,redis-sentinel-3:26379}
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 2
+          max-wait: 250ms
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
+    producer:
+      acks: all
+      batch-size: 16384
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.ByteArraySerializer
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+        delivery.timeout.ms: 5000
+        request.timeout.ms: 2000
+        max.block.ms: 1000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,circuitbreakers,circuitbreakerevents,retries,retryevents,bulkheads,bulkheadevents,ratelimiters,ratelimiterevents
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      group:
+        readiness:
+          include: readinessState,redisReadiness
+        liveness:
+          include: livenessState,coreLiveness
+        startup:
+          include: startupGate
+      show-details: always
+
+resilience4j:
+  bulkhead:
+    instances:
+      entryBulkhead:
+        maxConcurrentCalls: 32
+        maxWaitDuration: 0ms
+  circuitbreaker:
+    instances:
+      catalog:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        permittedNumberOfCallsInHalfOpenState: 3
+        waitDurationInOpenState: 5s
+      webhook:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        permittedNumberOfCallsInHalfOpenState: 3
+        waitDurationInOpenState: 5s
+  retry:
+    instances:
+      catalog:
+        maxAttempts: 3
+        waitDuration: 100ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2.0
+        exponentialMaxWaitDuration: 500ms
+        enableRandomizedWait: true
+        randomizedWaitFactor: 0.5
+        retryExceptionPredicate: io.github.rudsoncarvalho.reof.resilience.GlobalRetryBudgetPredicate
+      webhook:
+        maxAttempts: 3
+        waitDuration: 100ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2.0
+        exponentialMaxWaitDuration: 500ms
+        enableRandomizedWait: true
+        randomizedWaitFactor: 0.5
+        retryExceptionPredicate: io.github.rudsoncarvalho.reof.resilience.GlobalRetryBudgetPredicate
+  ratelimiter:
+    instances:
+      kafkaProducerThrottle:
+        limitForPeriod: 50
+        limitRefreshPeriod: 1s
+        timeoutDuration: 0ms
+
+demo:
+  clients:
+    catalog:
+      base-url: ${CATALOG_BASE_URL:http://catalog-mock:8080}
+    webhook:
+      base-url: ${WEBHOOK_BASE_URL:http://webhook-mock:8080}
+  kafka:
+    topic: fulfillment-events

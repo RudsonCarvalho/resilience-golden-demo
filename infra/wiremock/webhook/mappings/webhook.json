@@ -1,0 +1,17 @@
+{
+  "request": {
+    "method": "PUT",
+    "urlPathPattern": "/fulfillments/[^/]+",
+    "headers": {
+      "Idempotency-Key": {
+        "matches": ".+"
+      },
+      "Content-Encoding": {
+        "equalTo": "gzip"
+      }
+    }
+  },
+  "response": {
+    "status": 202
+  }
+}

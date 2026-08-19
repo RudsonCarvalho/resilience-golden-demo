@@ -83,8 +83,8 @@ You do not need Maven installed to run the Docker demo because the `Dockerfile` 
 ## Quick start
 
 ```bash
-git clone https://github.com/RudsonCarvalho/reof-golden-demo.git
-cd reof-golden-demo
+git clone https://github.com/RudsonCarvalho/resilience-golden-demo.git
+cd resilience-golden-demo
 docker compose up -d --build
 ```
 
@@ -320,12 +320,6 @@ Tier = Excellent
 Penalties = 0
 D = 1
 ```
-
-### Note about the supplied MS-1.1 maxima
-
-The supplied profile declares CE max `15`, while all listed CE mechanisms including the documented global retry-budget bonus can sum to `17`. SE declares max `21`, while all listed mechanisms including that bonus can sum to `23`.
-
-This fixture implements the mechanisms as written rather than hiding the inconsistency. If an auditor sums the mechanisms literally, normalization exceeds 10 and the profile's final clamp yields 10. If it caps each vertical at its declared maximum first, the service is exactly at its maximum and also yields 10.
 
 ## Configuration reference
 

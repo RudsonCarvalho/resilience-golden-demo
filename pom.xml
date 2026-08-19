@@ -12,10 +12,10 @@
     </parent>
 
     <groupId>io.github.rudsoncarvalho</groupId>
-    <artifactId>reof-golden-demo</artifactId>
+    <artifactId>resilience-golden-demo</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>reof-golden-demo</name>
-    <description>Microscopic Spring Boot reference service intentionally covering every REOF MS-1.1 resilience vertical.</description>
+    <name>resilience-golden-demo</name>
+    <description>Microscopic Spring Boot positive-control fixture for the CRAFT/MS-1.1.1 structural resilience audit.</description>
 
     <properties>
         <java.version>21</java.version>
